@@ -1,0 +1,6 @@
+apiVersion: testing.example.com/v1
+kind: Test
+metadata:
+  name: test-sample
+spec:
+  # TODO(user): Add fields here
