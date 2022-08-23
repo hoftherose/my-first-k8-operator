@@ -6,3 +6,6 @@ To install and setup make sure that your DNS can recognize the URL in your curre
 
 ## Upload your first Custom Resource (CR)
 In the folder config/samples there should be a file "{GROUP}_v1_test.yaml" which you can use to define a deployment for your new CR. By default, this new resource will only have the string parameter 'Foo' so you can only add this after spec. You can review the parameter on the etcd version of the yaml.
+
+Test the previous step with 'kubecet get ${CR_NAME} -o yaml' and make sure that the variable you assigned has the same value in the yaml file (under spec).
+To add more columns to the get table ('kubectl get ...') you need to follow the steps in the [following page](https://book.kubebuilder.io/reference/generating-crd.html#additional-printer-columns).
