@@ -18,12 +18,17 @@ package controllers
 
 import (
 	"context"
+	"errors"
+	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/go-logr/logr"
 	testingv1 "github.com/hoftherose/my-first-k8-operator/api/v1"
 )
 
@@ -47,11 +52,38 @@ type TestReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
 func (r *TestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	l := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	test_resource := &testingv1.Test{}
+	r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, test_resource)
+
+	l.Info("Reconciling")
+
+	if _, err := os.Stat(test_resource.Status.Foo); errors.Is(err, os.ErrNotExist) {
+		l.Info("Creating file")
+		os.Create(test_resource.Spec.Foo)
+		l.Info("File created")
+		// Update created status
+		test_resource.Status.Foo = test_resource.Spec.Foo
+		r.Status().Update(ctx, test_resource)
+	}
+
+	if test_resource.Status.Foo != test_resource.Spec.Foo {
+		renameFile(ctx, test_resource, l)
+		r.Status().Update(ctx, test_resource)
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func renameFile(ctx context.Context, test_resource *testingv1.Test, l logr.Logger) {
+	err := os.Rename(test_resource.Status.Foo, test_resource.Spec.Foo)
+	if err != nil {
+		l.Error(err, "Could not rename file.")
+	} else {
+		l.Info("File changed correctly")
+		test_resource.Status.Foo = test_resource.Spec.Foo
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.

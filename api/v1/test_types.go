@@ -28,7 +28,6 @@ type TestSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Test. Edit test_types.go to remove/update
 	Foo string `json:"foo,omitempty"`
 }
 
@@ -36,6 +35,8 @@ type TestSpec struct {
 type TestStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	Foo string `json:"foo,omitempty"`
 }
 
 // +kubebuilder:object:root=true
