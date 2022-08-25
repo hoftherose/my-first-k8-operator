@@ -27,6 +27,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
 	testingv1 "github.com/hoftherose/my-first-k8-operator/api/v1"
@@ -73,7 +74,38 @@ func (r *TestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		r.Status().Update(ctx, test_resource)
 	}
 
+	myFinalizerName := "testing.example.com.v1.finalizer"
+
+	if test_resource.ObjectMeta.DeletionTimestamp.IsZero() {
+		if !containsString(test_resource.ObjectMeta.Finalizers, myFinalizerName) {
+			test_resource.ObjectMeta.Finalizers = append(test_resource.ObjectMeta.Finalizers, myFinalizerName)
+			if err := r.Update(context.Background(), test_resource); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+
+	if test_resource.ObjectMeta.DeletionTimestamp != nil {
+		l.Info("Deleting file")
+		os.Remove(test_resource.Spec.Foo)
+		test_resource.ObjectMeta.Finalizers = removeString(test_resource.ObjectMeta.Finalizers, myFinalizerName)
+		if err := r.Update(context.Background(), test_resource); err != nil {
+			return reconcile.Result{}, err
+		}
+		l.Info("File deleted")
+	}
+
 	return ctrl.Result{}, nil
+}
+
+func removeString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return
 }
 
 func renameFile(ctx context.Context, test_resource *testingv1.Test, l logr.Logger) {
@@ -84,6 +116,15 @@ func renameFile(ctx context.Context, test_resource *testingv1.Test, l logr.Logge
 		l.Info("File changed correctly")
 		test_resource.Status.Foo = test_resource.Spec.Foo
 	}
+}
+
+func containsString(lists []string, s string) bool {
+	for _, value := range lists {
+		if value == s {
+			return true
+		}
+	}
+	return false
 }
 
 // SetupWithManager sets up the controller with the Manager.
